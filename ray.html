@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Estilo Swordigo</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Definição do personagem e suas propriedades
+        const player = {
+            x: 100,
+            y: 500,
+            width: 50,
+            height: 50,
+            speed: 5,
+            dx: 0,
+            dy: 0,
+            gravity: 0.8,
+            jumpPower: -15,
+            grounded: false,
+            attack: false
+        };
+
+        // Plataformas
+        const platforms = [
+            { x: 0, y: 580, width: 800, height: 20 }, // Plataforma do chão
+            { x: 200, y: 450, width: 200, height: 20 },
+            { x: 500, y: 350, width: 200, height: 20 },
+            { x: 150, y: 250, width: 200, height: 20 }
+        ];
+
+        // Inimigos
+        const enemies = [
+            { x: 700, y: 500, width: 50, height: 50, dx: -2, color: 'red' }
+        ];
+
+        // Sons
+        const jumpSound = new Audio('https://www.soundjay.com/button/beep-07.wav');
+        const attackSound = new Audio('https://www.soundjay.com/button/beep-01a.wav');
+
+        // Função para desenhar o jogador
+        function drawPlayer() {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        // Função para desenhar as plataformas
+        function drawPlatforms() {
+            ctx.fillStyle = "green";
+            platforms.forEach(platform => {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+        }
+
+        // Função para desenhar os inimigos
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+        }
+
+        // Função de física do personagem
+        function movePlayer() {
+            player.x += player.dx;
+
+            // Gravidade
+            if (player.y + player.height < canvas.height) {
+                player.dy += player.gravity;
+                player.grounded = false;
+            } else {
+                player.dy = 0;
+                player.y = canvas.height - player.height;
+                player.grounded = true;
+            }
+
+            player.y += player.dy;
+        }
+
+        // Função para controle de movimento do jogador
+        function move() {
+            if (keys.left && player.x > 0) {
+                player.dx = -player.speed;
+            } else if (keys.right && player.x < canvas.width - player.width) {
+                player.dx = player.speed;
+            } else {
+                player.dx = 0;
+            }
+
+            if (keys.up && player.grounded) {
+                player.dy = player.jumpPower;
+                jumpSound.play();  // Toca o som de pulo
+            }
+
+            if (keys.space && !player.attack) {
+                player.attack = true;
+                attackSound.play();  // Toca o som de ataque
+                setTimeout(() => player.attack = false, 300);  // Ataque dura 300ms
+            }
+        }
+
+        // Função de colisão com plataformas
+        function collisionDetection() {
+            platforms.forEach(platform => {
+                if (
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y + player.height <= platform.y + player.dy &&
+                    player.y + player.height + player.dy >= platform.y
+                ) {
+                    player.y = platform.y - player.height;
+                    player.dy = 0;
+                    player.grounded = true;
+                }
+            });
+        }
+
+        // Função para mover inimigos
+        function moveEnemies() {
+            enemies.forEach(enemy => {
+                enemy.x += enemy.dx;
+
+                // Inimigos que colidem com as bordas
+                if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.width) {
+                    enemy.dx = -enemy.dx;
+                }
+            });
+        }
+
+        // Função de animação do jogo
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpar a tela
+
+            movePlayer();
+            move();
+            collisionDetection();
+            moveEnemies();
+
+            drawPlatforms();
+            drawPlayer();
+            drawEnemies();
+
+            requestAnimationFrame(gameLoop); // Chama a função novamente
+        }
+
+        // Controle de teclas
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            space: false
+        };
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowLeft" || e.key === "a") keys.left = true;
+            if (e.key === "ArrowRight" || e.key === "d") keys.right = true;
+            if (e.key === "ArrowUp" || e.key === "w") keys.up = true;
+            if (e.key === " " || e.key === "Enter") keys.space = true; // Tecla de ataque
+        });
+
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowLeft" || e.key === "a") keys.left = false;
+            if (e.key === "ArrowRight" || e.key === "d") keys.right = false;
+            if (e.key === "ArrowUp" || e.key === "w") keys.up = false;
+            if (e.key === " " || e.key === "Enter") keys.space = false;
+        });
+
+        // Iniciar o jogo
+        gameLoop();
+    </script>
+</body>
+</html>
